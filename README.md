@@ -1,35 +1,41 @@
-# Homebase-Labs-Address-Table
-# Enterprise Network Design Project
+# Enterprise Network Design – HQ & Branch (ROBO)
 
-## Overview
-This project documents the design and implementation of a small-to-medium
-enterprise network covering HQ and Branch environments.
+## 📌 Overview
+This repository documents an enterprise-style network design covering a
+Head Office (HQ) and a Remote Branch Office (ROBO).
 
-The focus is on strong fundamentals:
-- Physical and logical topology planning
-- Structured IP addressing
-- VLAN segmentation
-- High availability and scalability
-- Clean, manageable enterprise design
+The project focuses on **design-first networking**, where physical topology,
+logical architecture, and IP addressing are carefully planned before deployment.
 
-## Key Features
-- Layer 3 core switching
-- VLAN-based segmentation (LAN, Servers, VoIP, Wi-Fi, Guests, APs, Management)
-- VRRP for default gateway redundancy
-- EtherChannel (LAG) for bandwidth and resilience
-- Centralized Wireless LAN Controller
-- Dedicated Management VLAN
-- Centralized DHCP (Windows Server)
+## 🎯 Objectives
+- Build a scalable and resilient enterprise network
+- Separate traffic using VLANs (LAN, Servers, VoIP, Wi-Fi, Guests, APs, Management)
+- Implement high availability at the network edge
+- Maintain clean, structured IP addressing
+- Document decisions for easy troubleshooting and future growth
 
-## Technologies Used
-- Cisco Routers & Catalyst Switches
-- Cisco 2504 Wireless LAN Controller
-- VRRP, VLANs, Trunking, EtherChannel
-- Windows DHCP Server
+## 🏗 Architecture Summary
+- Layer 3 core switching at HQ
+- Dual edge routers with VRRP for gateway redundancy
+- Dedicated transit subnets
+- Centralized wireless using a WLC
+- HQ and Branch using separate address spaces
+- Voice-ready access design (data + voice VLANs)
 
-## Status
-🚧 Work in progress — logical topology and configurations are still being refined.
+## 🧱 Technologies & Concepts
+- VLANs & 802.1Q Trunking
+- VRRP (Gateway Redundancy)
+- EtherChannel (LAG)
+- Layer 3 Switching
+- Centralized DHCP (Windows Server – planned)
+- Wireless LAN Controller architecture
 
-## Purpose
-This is a learning-focused, hands-on project aimed at building
-job-ready enterprise networking skills.
+## 📂 Project Status
+🚧 Work in progress  
+Current focus: addressing scheme, VLAN design, and documentation.  
+Logical diagrams and configs will follow.
+
+## ✍️ Author
+Lewis Mwita  
+Enterprise Networking | Learning by Building
+
