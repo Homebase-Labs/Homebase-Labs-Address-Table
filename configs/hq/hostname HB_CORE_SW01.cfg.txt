@@ -1,0 +1,265 @@
+hostname HB_CORE_SW01
+service password-encryption
+no ip http server
+no ip http secure-server
+
+ip domain-name homebaselabs.tech
+username admin privilege 15 secret Str0ngP@ssw0rd
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+
+line con 0
+ logging synchronous
+ exec-timeout 10 0
+!
+line vty 0 4
+ logging synchronous
+ login local
+ transport input ssh
+ exec-timeout 10 0
+!
+
+ntp server 10.16.99.30 prefer
+
+! ==========================
+! SNMP RO/RW (restricted)
+! ==========================
+ip access-list standard SNMP-RO
+ permit 10.16.99.30
+ permit 10.16.99.0 0.0.0.63
+ deny any
+ip access-list standard SNMP-RW
+ permit 10.16.99.30
+ deny any
+
+snmp-server community HB-RO-SNMP RO SNMP-RO
+snmp-server community HB-RW-SNMP RW SNMP-RW
+snmp-server location HQ-Core
+snmp-server contact it@homebaselabs.tech
+
+! ==========================
+! L3 + VLANs
+! ==========================
+ip routing
+
+vlan 11
+ name SERVER
+vlan 22
+ name LAN
+vlan 33
+ name VOIP
+vlan 44
+ name HB_WiFi
+vlan 45
+ name HB_GUESTS
+vlan 55
+ name HB_APs
+vlan 99
+ name MGMT
+vlan 255
+ name TRANSIT_VRRP
+
+interface Vlan11
+ description SERVER VLAN (DHCP/DNS Server 10.16.0.15)
+ ip address 10.16.0.1 255.255.255.0
+ no shutdown
+
+interface Vlan22
+ description LAN VLAN
+ ip address 10.16.2.1 255.255.255.0
+ ip helper-address 10.16.0.15
+ no shutdown
+
+interface Vlan33
+ description VOIP VLAN
+ ip address 10.16.4.1 255.255.255.0
+ ip helper-address 10.16.0.15
+ no shutdown
+
+interface Vlan44
+ description WiFi VLAN
+ ip address 10.16.6.1 255.255.255.0
+ ip helper-address 10.16.0.15
+ no shutdown
+
+interface Vlan45
+ description Guests VLAN
+ ip address 10.16.7.1 255.255.255.0
+ ip helper-address 10.16.0.15
+ no shutdown
+
+interface Vlan55
+ description APs VLAN
+ ip address 10.16.8.1 255.255.255.0
+ ip helper-address 10.16.0.15
+ no shutdown
+
+interface Vlan99
+ description Management VLAN
+ ip address 10.16.99.10 255.255.255.192
+ no shutdown
+
+interface Vlan255
+ description Transit to Routers (VLAN255)
+ ip address 10.16.255.6 255.255.255.248
+ no shutdown
+
+! ==========================
+! ROUTING (OSPF)
+! ==========================
+router ospf 10
+ router-id 10.16.99.10
+ passive-interface default
+ no passive-interface Vlan255
+ network 10.16.0.0 0.0.255.255 area 0
+
+
+
+! ==========================
+! STP
+! ==========================
+spanning-tree mode rapid-pvst
+spanning-tree portfast default
+spanning-tree bpduguard default
+
+! ==========================
+! DHCP Snooping (block untrusted DHCP)
+! ==========================
+ip dhcp snooping
+ip dhcp snooping vlan 22,33,44,45,55,99
+
+! ==========================
+! EtherChannel to WLC (LACP)
+! ==========================
+interface range GigabitEthernet1/0/12-13
+ description LAG to HB_WLC01 (Trunk VLAN99)
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ ip dhcp snooping trust
+ channel-group 1 mode on
+ no shutdown
+
+interface Port-channel1
+ description LAG to HB_WLC01 (Trunk VLAN99)
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ ip dhcp snooping trust
+ no shutdown
+
+! ==========================
+! INTERFACES (ALL PORTS)
+! ==========================
+
+interface GigabitEthernet1/0/1
+ description To HB_R001 Gi0/0 (Transit VLAN255)
+ switchport mode access
+ switchport access vlan 255
+ no shutdown
+
+interface GigabitEthernet1/0/2
+ description To HB_R002 Gi0/0 (Transit VLAN255)
+ switchport mode access
+ switchport access vlan 255
+ no shutdown
+
+interface range GigabitEthernet1/0/3-4
+ description AP Ports (VLAN55)
+ switchport mode access
+ switchport access vlan 55
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+ no shutdown
+
+interface range GigabitEthernet1/0/5-11
+ description Users + IP Phones (Data 22 / Voice 33)
+ switchport mode access
+ switchport access vlan 22
+ switchport voice vlan 33
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+
+! Gi1/0/12-13 reserved for EtherChannel (configured above)
+
+interface range GigabitEthernet1/0/14-24
+ description Users + IP Phones (Data 22 / Voice 33)
+ switchport mode access
+ switchport access vlan 22
+ switchport voice vlan 33
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+
+interface GigabitEthernet1/0/25
+ description Grandstream PBX (VLAN33)
+ switchport mode access
+ switchport access vlan 33
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+
+interface range GigabitEthernet1/0/26-38
+ description Users + IP Phones (Data 22 / Voice 33)
+ switchport mode access
+ switchport access vlan 22
+ switchport voice vlan 33
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+
+interface range GigabitEthernet1/0/39-42
+ description Servers (VLAN11)
+ switchport mode access
+ switchport access vlan 11
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+ no shutdown
+
+interface GigabitEthernet1/0/39
+ description Windows DHCP/DNS Server (10.16.0.15) - TRUSTED
+ ip dhcp snooping trust
+
+interface range GigabitEthernet1/0/43-48
+ description Users + IP Phones (Data 22 / Voice 33)
+ switchport mode access
+ switchport access vlan 22
+ switchport voice vlan 33
+ spanning-tree portfast
+ ip dhcp snooping limit rate 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ no shutdown
+
+interface GigabitEthernet1/1/1
+ description Trunk to HB_ACCESS_SW01 (802.1Q)
+ switchport mode trunk
+ switchport trunk allowed vlan 22,33,44,45,55,99
+ ip dhcp snooping trust
+ no shutdown
