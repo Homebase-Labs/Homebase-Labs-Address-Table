@@ -73,7 +73,6 @@ interface FastEthernet0/1/0
 
 !
 ! --- WAN 2 (optional / standby / future use) ---
-! If you are NOT using WAN2 now, you can leave it shutdown.
 !
 interface FastEthernet0/1/1
  description WAN 2 ISP (Optional)
@@ -129,3 +128,4 @@ ip access-list extended WAN_IN
 !
 end
 write memory
+
